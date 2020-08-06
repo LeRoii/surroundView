@@ -77,9 +77,12 @@ const int FRONT_LEFT_MERGE_COL_DIFF = LEFT_CROPED_START_X - LEFT_IMG_CROP_START_
 
 cv::Size imgSize((CAMERA_FRAME_WIDTH+X_EXPAND)*1.0,(CAMERA_FRAME_HEIGHT+Y_EXPAND)*1.0);
 
-cv::Mat mapx = cv::Mat(imgSize,CV_32FC1);
-cv::Mat mapy = cv::Mat(imgSize,CV_32FC1);
+// cv::Mat mapx = cv::Mat(imgSize,CV_32FC1);
+// cv::Mat mapy = cv::Mat(imgSize,CV_32FC1);
 cv::Mat R = cv::Mat::eye(3,3,CV_32F);
+
+cv::Mat mapx[CAMERA_NUM];
+cv::Mat mapy[CAMERA_NUM];
 
 cv::VideoCapture cameras[CAMERA_NUM];
 cv::Mat frames[CAMERA_NUM];
@@ -92,11 +95,9 @@ cv::cuda::GpuMat gpuOutput[CAMERA_NUM];
 void frameProc(int camId)
 {
 	cameras[camId] >> frames[camId];
-	cv::Mat borderDistoredImage = frames[camId].clone();
-	copyMakeBorder(frames[camId],borderDistoredImage,(int)(Y_EXPAND/2),(int)(Y_EXPAND/2),(int)(X_EXPAND/2),(int)(X_EXPAND/2),BORDER_CONSTANT);
 
 	//cv::imwrite("borderDistoredImage"+imageFileName,borderDistoredImage);
-	cv::remap(borderDistoredImage,undistoredFrames[camId],mapx, mapy, cv::INTER_LINEAR);
+	cv::remap(frames[camId], undistoredFrames[camId], mapx[camId], mapy[camId], cv::INTER_LINEAR);
 
 	//cv::imwrite("undistored"+imageFileName,undistoredFrames[i]);
 
@@ -130,33 +131,56 @@ int main()
     std::cout << "GPU is ready, device ID is " << num_devices << "\n";
 
 
-	
+	cv::Size imgSize = Size(CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT);
+	float scale = 1.0;
+	Size undistorSize = Size(imgSize.width*scale,imgSize.height*scale);
+    
 
-	cv::Matx33d intrinsic_matrix;
-	cv::Vec4d distortion_coeffs;
-	//int x_expand = 750,y_expand = 480;		//x,y方向的扩展(x横向，y纵向)，适当增大可以不损失原图像信息	//1.8mm front ok
-	//int x_expand = 0,y_expand = 200;
-	//cv::Size imgSize = cv::Size(640,480);
+	cv::Matx33d intrinsic_matrix[CAMERA_NUM];
+	cv::Vec4d distortion_coeffs[CAMERA_NUM];
+	cv::Mat newMatrix[CAMERA_NUM];
 
-	//1.8mm
-	intrinsic_matrix << 765.4423103128532, 0, 958.402420837329,
- 						0, 765.6356214447392, 687.4306063863424,
- 						0, 0, 1;
-	distortion_coeffs << -0.0316929, 0.0360623, -0.0623949, 0.0348068;
+    //front
+    intrinsic_matrix[0] << 499.2256225154061, 0, 685.0325527895111,
+                        0, 499.6344093018186, 288.8632118906361,
+                        0, 0, 1;
 
-	//1280x720 200fov
-	// intrinsic_matrix << 244.7879600344495, 0, 724.9293172169554,
- 	// 					0, 244.8360344210398, 510.1527621243182,
-	// 					0, 0, 1;
-	// distortion_coeffs << -0.018679, -0.0218638, 0.0288774, -0.0139819;
+    distortion_coeffs[0] << -0.0230412, 0.00631978, -0.00455568, 0.000311248;
+
+    //left
+    intrinsic_matrix[1] << 512.0799991633208, 0, 681.3682183385124,
+                        0, 511.931977341321, 348.725565495493,
+                        0, 0, 1;
+
+    distortion_coeffs[1] << -0.0309463, 0.00392602, -0.00515291, 0.00102781;
+
+	//back
+    // intrinsic_matrix[2] << 512.0799991633208, 0, 681.3682183385124,
+    //                     0, 511.931977341321, 348.725565495493,
+    //                     0, 0, 1;
+
+    // distortion_coeffs[2] << -0.0309463, 0.00392602, -0.00515291, 0.00102781;
+
+	//right
+    intrinsic_matrix[3] << 499.9046978644982, 0, 612.955400120308,
+                        0, 500.02613225669, 357.855947068545,
+                        0, 0, 1;
+
+    distortion_coeffs[3] << -0.0248636, 0.0124981, -0.0126063, 0.00352282;
 
 
-	cout<<intrinsic_matrix<<endl;   
-    cout<<distortion_coeffs<<endl; 
+	for(int i=0;i<CAMERA_NUM;i++)
+	{
+		cout<<"camera:"<<i<<endl<<intrinsic_matrix<<endl<<distortion_coeffs<<endl;
+		fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.75f, undistorSize, 1.0);
+		newMatrix[i].at<float>(0,2) = CAMERA_FRAME_WIDTH/2;
+    	newMatrix[i].at<float>(1,2) = CAMERA_FRAME_HEIGHT/2;
+		cv::fisheye::initUndistortRectifyMap(intrinsic_matrix[i], distortion_coeffs[i], R, newMatrix[i], imgSize, CV_32FC1, mapx[i], mapy[i]);
+	}
 
 	float mmPerPiexl = 2.05f;
 
-	cv::fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs,R,intrinsic_matrix,imgSize,CV_32FC1,mapx,mapy);
+	// cv::fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs,R,intrinsic_matrix,imgSize,CV_32FC1,mapx,mapy);
 /*
 	//find H
 
@@ -500,7 +524,7 @@ return 0;
 		auto endTime = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 		cout<<"before stich SpendTime = "<<  duration.count() <<"ms"<<endl;
-		continue;
+		//continue;
 
 		perspectiveFront = persprctiveImgs[0];
 		perspectiveLeft = persprctiveImgs[1];
@@ -590,7 +614,7 @@ return 0;
 			cv::Mat rett;
 			cv::resize(ret,rett,Size(1024,1024));
 			cv::imshow("ret",rett);
-			//cv::waitKey(333);
+			cv::waitKey(1);
 		}
 
 		//gpuOutput.release();
