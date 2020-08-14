@@ -17,6 +17,7 @@ using std::vector;
 using std::thread;
 //using namespace std;
 
+//asdasd
 const int CAMERA_NUM = 4;
 const int CAMERA_FRAME_WIDTH = 1280;
 const int CAMERA_FRAME_HEIGHT = 720;
