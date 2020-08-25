@@ -34,12 +34,12 @@ int main()
 
     distortion_coeffs[1] << -0.0309463, 0.00392602, -0.00515291, 0.00102781;
 
-	//back need update
-    intrinsic_matrix[2] << 512.0799991633208, 0, 681.3682183385124,
-                        0, 511.931977341321, 348.725565495493,
+	//back
+    intrinsic_matrix[2] << 500.8548704340391, 0, 644.1812130625166,
+                        0, 499.9234264350891, 391.6005802176933,
                         0, 0, 1;
 
-    distortion_coeffs[2] << -0.0309463, 0.00392602, -0.00515291, 0.00102781;
+    distortion_coeffs[2] << -0.0136425, -0.0220779, 0.0208222, -0.00740363;
 
 	//right
     intrinsic_matrix[3] << 499.9046978644982, 0, 612.955400120308,
@@ -81,6 +81,8 @@ int main()
 
 	cv::Mat newMatrix[CAMERA_NUM];
 
+	
+
 	for(int i=0;i<CAMERA_NUM;i++)
 	{
 		newMatrix[i] = cv::Mat::eye(3,3,CV_32F);
@@ -88,24 +90,32 @@ int main()
 		mapy[i] = cv::Mat(undistorSize,CV_32FC1);
 	}
 
+	newMatrix[0] = (cv::Mat_<float>(3,3)<< 183.81589, 0, 640, 0, 183.96642, 360, 0, 0, 1);//front
+	// newMatrix[1] = (cv::Mat_<float>(3,3)<< 183.41266, 0, 745, 0, 183.35963, 366, 0, 0, 1);//left
+	newMatrix[1] = (cv::Mat_<float>(3,3)<< 165.0714, 0, 719, 0, 183.35963, 411, 0, 0, 1);//left
+	newMatrix[2] = (cv::Mat_<float>(3,3)<< 272.40869, 0, 640, 0, 209.15546, 360, 0, 0, 1);//back
+	newMatrix[3] = (cv::Mat_<float>(3,3)<< 197.14009, 0, 619.65588, 0, 236.62556, 358.76065, 0, 0, 1);//right
 	Mat newMatrixxxx = Mat::eye(3,3,CV_32F);
-
 	// auto newmatrix = intrinsic_matrix;
 
 	for(int i=0;i<4;i++)
 	{
-		cout<<"camera:"<<i<<endl<<intrinsic_matrix[i]<<endl<<distortion_coeffs[i]<<endl<<endl;
-		fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.75f, undistorSize, 1.0);
-		newMatrix[i].at<float>(0,2) = CAMERA_FRAME_WIDTH/2;
-    	newMatrix[i].at<float>(1,2) = CAMERA_FRAME_HEIGHT/2;
+		// cout<<"camera:"<<i<<endl<<intrinsic_matrix[i]<<endl<<distortion_coeffs[i]<<endl<<endl;
+		// fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.75f, undistorSize, 1.0);
+		// newMatrix[i].at<float>(0,2) = CAMERA_FRAME_WIDTH/2;
+    	// newMatrix[i].at<float>(1,2) = CAMERA_FRAME_HEIGHT/2;
 		cout<<"estimateNewCameraMatrixForUndistortRectify"<<endl<<newMatrix[i]<<endl<<endl;
 		cv::fisheye::initUndistortRectifyMap(intrinsic_matrix[i], distortion_coeffs[i], R, newMatrix[i], imgSize, CV_32FC1, mapx[i], mapy[i]);
 	}
 
-	cv::remap(distoredFront, undistoredFront, mapx[0], mapy[0], cv::INTER_LINEAR);
-	cv::remap(distoredLeft, undistoredLeft, mapx[1], mapy[1], cv::INTER_LINEAR);
-	cv::remap(distoredBack, undistoredBack, mapx[2], mapy[2], cv::INTER_LINEAR);
-	cv::remap(distoredRight, undistoredRight, mapx[3], mapy[3], cv::INTER_LINEAR);
+	// newMatrix[3].at<float>(0,2) = CAMERA_FRAME_WIDTH/2 - 150;
+	// newMatrix[3].at<float>(1,2) = CAMERA_FRAME_HEIGHT/2;
+	// cv::fisheye::initUndistortRectifyMap(intrinsic_matrix[3], distortion_coeffs[3], R, newMatrix[3], imgSize, CV_32FC1, mapx[3], mapy[3]);
+
+	cv::remap(distoredFront, undistoredFront, mapx[0], mapy[0], cv::INTER_CUBIC);
+	cv::remap(distoredLeft, undistoredLeft, mapx[1], mapy[1], cv::INTER_CUBIC);
+	cv::remap(distoredBack, undistoredBack, mapx[2], mapy[2], cv::INTER_CUBIC);
+	cv::remap(distoredRight, undistoredRight, mapx[3], mapy[3], cv::INTER_CUBIC);
 
 	cv::imwrite("undistoredFront.png",undistoredFront);
 	cv::imwrite("undistoredLeft.png",undistoredLeft);
@@ -116,28 +126,26 @@ int main()
 	// //find H
 
 	//right
-	vector<Point2f> srcPts = {Point2f(313,751), Point2f(533,527), Point2f(1921,722), Point2f(1750,550)};
-	vector<Point2f> dstPts = {Point2f(315,804), Point2f(448,530), Point2f(1918,764), Point2f(1819,555)};
+	vector<Point2f> srcPts = {cv::Point2f(237,577), cv::Point2f(380, 359), cv::Point2f(1040,362), cv::Point2f(1257,559)};
+	vector<Point2f> dstPts = {cv::Point2f(66,627), cv::Point2f(66, 316), cv::Point2f(1206,316), cv::Point2f(1206,627)};
 	Mat hRight = findHomography(srcPts, dstPts);
 
 	//front
 	srcPts = {Point2f(120,639), Point2f(485, 367), Point2f(781,373), Point2f(1079,627)};
-	dstPts = {Point2f(135, 694), Point2f(130, 249), Point2f(1052, 249), Point2f(1052, 694)};
+	dstPts = {Point2f(277, 653), Point2f(277, 343), Point2f(900, 343), Point2f(900, 653)};
 	Mat hFront = findHomography(srcPts, dstPts);
 
 	//left
 	// srcPts = {Point2f(230,868), Point2f(390,975), Point2f(655,639), Point2f(1376,617), Point2f(1727,967), Point2f(1984,830)};
 	// dstPts = {Point2f(227,984+0), Point2f(390,975), Point2f(389+100,605), Point2f(1727-100,590), Point2f(1727,967), Point2f(2008,962+0)};
-	srcPts = {Point2f(282,785), Point2f(359,831), Point2f(474,515), Point2f(1644,583), Point2f(1768,817), Point2f(1955,741)};
-	dstPts = {Point2f(270,828), Point2f(340,828), Point2f(340,522), Point2f(1780,550), Point2f(1780,828), Point2f(1960,828)};
+	srcPts = {cv::Point2f(60,709), cv::Point2f(388, 473), cv::Point2f(961,470), cv::Point2f(1167,661)};
+	dstPts = {cv::Point2f(120,657), cv::Point2f(120, 393), cv::Point2f(1252,393), cv::Point2f(1252,657)};
 	
 	Mat hLeft = findHomography(srcPts, dstPts);
 
 	//back
-	srcPts = {Point2f(357, 805), Point2f(575, 892), Point2f(724, 447), Point2f(1297, 382), Point2f(1494, 894), Point2f(1926, 780)};
-	dstPts = {Point2f(300, 878), Point2f(520,878+300), Point2f(520,450), Point2f(1442, 361), Point2f(1442,878), Point2f(1939, 878)};
-	dstPts = {Point2f(1015-1680/mmPerPiexl, 878), Point2f(1015-800/mmPerPiexl,878), Point2f(1015-800/mmPerPiexl,878-1160/mmPerPiexl), 
-			Point2f(1015+800/mmPerPiexl, 878-1380/mmPerPiexl), Point2f(1015+800/mmPerPiexl,878), Point2f(1015+2410/mmPerPiexl, 878)};
+	srcPts = {cv::Point2f(302,514), cv::Point2f(458, 275), cv::Point2f(812,273), cv::Point2f(956,503)};
+	dstPts = {cv::Point2f(380,692), cv::Point2f(380, 280), cv::Point2f(997,280), cv::Point2f(997,692)};
 	Mat hBack = findHomography(srcPts, dstPts);
 
 	cv::Mat perspectiveFront, perspectiveLeft, perspectiveRight, perspectiveBack;
@@ -168,6 +176,146 @@ int main()
 	cv::imwrite("perspectiveLeft.png",perspectiveLeft);
 	cv::imwrite("perspectiveRight.png",perspectiveRight);
 	cv::imwrite("perspectiveBack.png",perspectiveBack);
+
+	const int SURROUND_VIEW_IMG_WIDTH = 1280;
+	const int SURROUND_VIEW_IMG_HEIGHT = 2462;
+
+	const int PERSPECTIVE_IMT_WIDTH = 1280;
+	const int PERSPECTIVE_IMT_HEIGHT = 720;
+
+	const int RIGHT_IMG_CROP_HEIGHT = 1162;
+
+	//pixel on surround view img
+	const int FRONT_VIEW_DIST = 630;//in pixel
+	const int LEFT_VIEW_DIST = 480;
+	const int RIGHT_VIEW_DIST = 480;
+
+	const int FRONT_CROPED_START_X = 0;
+	const int FRONT_CROPED_START_Y = 0;
+	const int RIGHT_CROPED_START_X =895;
+	const int RIGHT_CROPED_START_Y = FRONT_VIEW_DIST;
+	const int LEFT_CROPED_START_X = 0;
+	const int LEFT_CROPED_START_Y = FRONT_VIEW_DIST;
+	const int BACK_CROPED_START_X = 0;
+	const int BACK_CROPED_START_Y = RIGHT_CROPED_START_Y + RIGHT_IMG_CROP_HEIGHT-30;
+
+	const int BACK_VIEW_DIST = 700;
+
+
+	//pixel on perspective img
+	const int FRONT_IMG_CROP_START_X = 0;
+	const int FRONT_IMG_CROP_START_Y = 0;
+	const int FRONT_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH;
+	const int FRONT_IMG_CROP_HEIGHT = FRONT_VIEW_DIST;
+
+	const int BACK_IMG_CROP_START_X = 0;
+	const int BACK_IMG_CROP_START_Y = 0;
+	const int BACK_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH;
+	const int BACK_IMG_CROP_HEIGHT = BACK_VIEW_DIST;
+
+	const int RIGHT_IMG_CROP_START_X = 88;
+	const int RIGHT_IMG_CROP_START_Y = 63;
+	const int RIGHT_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH - RIGHT_CROPED_START_X;
+	
+	const int LEFT_IMG_CROP_WIDTH = 280;
+	const int LEFT_IMG_CROP_HEIGHT = RIGHT_IMG_CROP_HEIGHT;
+	const int LEFT_IMG_CROP_START_X = 570 - LEFT_IMG_CROP_WIDTH;
+	const int LEFT_IMG_CROP_START_Y = 30;
+
+	const int FRONT_RIGHT_MERGE_ROW_DIFF = RIGHT_CROPED_START_Y - RIGHT_IMG_CROP_START_Y;
+	const int FRONT_RIGHT_MERGE_COL_DIFF = RIGHT_CROPED_START_X - RIGHT_IMG_CROP_START_X;
+	const int FRONT_LEFT_MERGE_ROW_DIFF = LEFT_CROPED_START_Y - LEFT_IMG_CROP_START_Y;
+	const int FRONT_LEFT_MERGE_COL_DIFF = LEFT_CROPED_START_X - LEFT_IMG_CROP_START_X;
+
+	const int TOP_MERGE_START_Y = 557;
+	const int BOT_MERGE_END_Y = 1896;
+
+	cv::Mat frontCroped, leftCroped, rightCroped, backCroped, ret;
+	ret = cv::Mat(Size(SURROUND_VIEW_IMG_WIDTH, SURROUND_VIEW_IMG_HEIGHT),CV_8UC3,Scalar(255, 0, 0));
+
+	frontCroped = perspectiveFront(Rect(FRONT_IMG_CROP_START_X, FRONT_IMG_CROP_START_Y, FRONT_IMG_CROP_WIDTH, FRONT_IMG_CROP_HEIGHT)).clone();
+	backCroped = perspectiveBack(Rect(BACK_IMG_CROP_START_X, BACK_IMG_CROP_START_Y, BACK_IMG_CROP_WIDTH, BACK_IMG_CROP_HEIGHT)).clone();
+	
+
+	flip(backCroped,backCroped,-1);
+
+	transpose(perspectiveRight, perspectiveRight);
+	flip(perspectiveRight, perspectiveRight, 1);
+	
+
+	transpose(perspectiveLeft, perspectiveLeft);
+	flip(perspectiveLeft, perspectiveLeft, 0);
+
+	rightCroped = perspectiveRight(Rect(RIGHT_IMG_CROP_START_X, RIGHT_IMG_CROP_START_Y, RIGHT_IMG_CROP_WIDTH, RIGHT_IMG_CROP_HEIGHT)).clone();
+	leftCroped = perspectiveLeft(Rect(LEFT_IMG_CROP_START_X, LEFT_IMG_CROP_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)).clone();
+
+
+
+	cv::imwrite("cropFront.png",frontCroped);
+	cv::imwrite("cropback.png",backCroped);
+	cv::imwrite("rotatedright.png",perspectiveRight);
+	cv::imwrite("rotatedleft.png",perspectiveLeft);
+	cv::imwrite("cropright.png",rightCroped);
+	cv::imwrite("cropleft.png",leftCroped);
+
+	frontCroped.copyTo(ret(Rect(FRONT_CROPED_START_X, FRONT_CROPED_START_Y, FRONT_IMG_CROP_WIDTH, FRONT_IMG_CROP_HEIGHT)));
+	backCroped.copyTo(ret(Rect(BACK_CROPED_START_X, BACK_CROPED_START_Y, BACK_IMG_CROP_WIDTH, BACK_IMG_CROP_HEIGHT)));
+	rightCroped.copyTo(ret(Rect(RIGHT_CROPED_START_X, RIGHT_CROPED_START_Y, RIGHT_IMG_CROP_WIDTH,RIGHT_IMG_CROP_HEIGHT)));
+	leftCroped.copyTo(ret(Rect(LEFT_CROPED_START_X, LEFT_CROPED_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)));
+
+	int mergeColStart;// = PERSPECTIVE_IMT_WIDTH;
+	for(int i = TOP_MERGE_START_Y;i<=FRONT_VIEW_DIST;i++)
+	//for(int i = TOP_MERGE_START_Y;i<=TOP_MERGE_START_Y+3;i++)
+	{
+		//mergeColStart = 2130 - (i-250)*48/25;//	front right merge area
+		mergeColStart = (i-TOP_MERGE_START_Y)*(RIGHT_CROPED_START_X-PERSPECTIVE_IMT_WIDTH)/(FRONT_VIEW_DIST-TOP_MERGE_START_Y)+PERSPECTIVE_IMT_WIDTH;
+		for(;mergeColStart<=SURROUND_VIEW_IMG_WIDTH;mergeColStart++)
+		{
+			ret.at<Vec3b>(i,mergeColStart)[0] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,mergeColStart)[1] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,mergeColStart)[2] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
+
+			//cout<<"	front right merge area:"<<mergeColStart<<",,";
+		}
+		//cout<<"i=="<<i<<endl;
+
+		//front left merge area
+		int j_limt = (i-TOP_MERGE_START_Y)*(LEFT_IMG_CROP_WIDTH-LEFT_CROPED_START_X)/(FRONT_VIEW_DIST-TOP_MERGE_START_Y)+LEFT_CROPED_START_X;
+		for(int j=0;j<=j_limt;j++)
+		{
+			ret.at<Vec3b>(i,j)[0] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,j)[1] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,j)[2] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
+		}
+	}
+
+	for(int i=FRONT_VIEW_DIST+LEFT_IMG_CROP_HEIGHT;i<BOT_MERGE_END_Y;i++)
+	{
+		//back left merge
+		int j_limt = (i-BOT_MERGE_END_Y)*(LEFT_IMG_CROP_WIDTH-LEFT_CROPED_START_X)/(FRONT_VIEW_DIST+LEFT_IMG_CROP_HEIGHT-BOT_MERGE_END_Y)+LEFT_CROPED_START_X;
+		for(int j=0;j<=j_limt;j++)
+		{
+			ret.at<Vec3b>(i,j)[0] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,j)[1] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,j)[2] = perspectiveLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
+		}
+
+		//back right merge
+		mergeColStart = (i-BOT_MERGE_END_Y)*(RIGHT_CROPED_START_X-SURROUND_VIEW_IMG_WIDTH)/(FRONT_VIEW_DIST+LEFT_IMG_CROP_HEIGHT-BOT_MERGE_END_Y)+SURROUND_VIEW_IMG_WIDTH;
+		for(;mergeColStart<=SURROUND_VIEW_IMG_WIDTH;mergeColStart++)
+		{
+			ret.at<Vec3b>(i,mergeColStart)[0] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,mergeColStart)[1] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,mergeColStart)[2] = perspectiveRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
+
+			// cout<<"	back right merge area:"<<mergeColStart<<",,";
+		}
+	}
+
+
+	// resize(ret,ret,Size(1000,1000));
+	cv::imwrite("ret.png",ret);
+
 
 
 	return 0;

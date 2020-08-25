@@ -14,7 +14,7 @@ int main()
     *************************************************************************/   
     cout<<"start extract corners"<<endl; 
 	//以下三行为需要手动修改的参数
-    int image_count=  57;                   //图像数量
+    int image_count=  24;                   //图像数量
     Size board_size = Size(6,4);            //定标板上每行、列的角点数
 	int x_expand = 0,y_expand = 0;		//x,y方向的扩展(x横向，y纵向)，适当增大可以不损失原图像信息
 
@@ -31,7 +31,7 @@ int main()
         StrStm<<i+1;
         StrStm>>imageFileName;
         imageFileName += ".png";
-        cv::Mat image = imread("../../calib1280_left/img"+imageFileName); 
+        cv::Mat image = imread("../../calib1280_back/img"+imageFileName); 
 		//Mat image;//边界扩展后的图片
 		//copyMakeBorder(imageSrc,image,(int)(y_expand/2),(int)(y_expand/2),(int)(x_expand/2),(int)(x_expand/2),BORDER_CONSTANT);
         /* 提取角点 */   
@@ -203,7 +203,7 @@ int main()
 
     for (int i = 0 ; i != image_count ; i++)
     {
-		fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs, R, optMatrix, undistorSize,CV_32FC1,mapx,mapy);
+		fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs, R, newMatrix, undistorSize,CV_32FC1,mapx,mapy);
         // fisheye::initUndistortRectifyMap(intrinsic_matrix, distortion_coeffs, R,
         //     getOptimalNewCameraMatrix(intrinsic_matrix, distortion_coeffs, image_size, 1, image_size, 0), image_size, CV_32FC1, mapx, mapy);
 
