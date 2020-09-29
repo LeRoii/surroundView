@@ -19,14 +19,14 @@ const int CAMERA_FRAME_WIDTH = 1280;
 const int CAMERA_FRAME_HEIGHT = 720;
 
 const int SURROUND_VIEW_IMG_WIDTH = 1280;
-const int SURROUND_VIEW_IMG_HEIGHT = 1625;
+const int SURROUND_VIEW_IMG_HEIGHT = 1925;
 
 const int PERSPECTIVE_IMT_WIDTH = 1280;
 const int PERSPECTIVE_IMT_HEIGHT = 720;
 
-const int CAR_IMG_WIDTH = 640;
-const int CAR_IMG_HEIGHT = 622;
-const int CAR_IMG_START_X = SURROUND_VIEW_IMG_WIDTH/2 - CAR_IMG_WIDTH/2;
+const int CAR_IMG_WIDTH = 255;
+const int CAR_IMG_HEIGHT = 560;
+const int CAR_IMG_START_X = 560;//SURROUND_VIEW_IMG_WIDTH/2 - CAR_IMG_WIDTH/2;
 const int CAR_IMG_START_Y = 500;//SURROUND_VIEW_IMG_HEIGHT/2 - CAR_IMG_HEIGHT/2;
 
 //pixel on surround view img
@@ -34,10 +34,10 @@ const int FRONT_VIEW_DIST = 500;//in pixel
 
 const int FRONT_CROPED_START_X = 0;
 const int FRONT_CROPED_START_Y = 0;
-const int RIGHT_CROPED_START_X = SURROUND_VIEW_IMG_WIDTH/2 + CAR_IMG_WIDTH/2 - 20;
+const int RIGHT_CROPED_START_X = 812;//SURROUND_VIEW_IMG_WIDTH/2 + CAR_IMG_WIDTH/2;
 const int RIGHT_CROPED_START_Y = 43;
 const int LEFT_CROPED_START_X = 0;
-const int LEFT_CROPED_START_Y = 260;
+const int LEFT_CROPED_START_Y = 324;
 const int BACK_CROPED_START_X = 0;
 const int BACK_CROPED_START_Y = FRONT_VIEW_DIST + CAR_IMG_HEIGHT;
 
@@ -45,7 +45,7 @@ const int BACK_VIEW_DIST = 500;
 
 //pixel on perspective img
 const int FRONT_IMG_CROP_START_X = 0;
-const int FRONT_IMG_CROP_START_Y = 674 - FRONT_VIEW_DIST;
+const int FRONT_IMG_CROP_START_Y = 658 - FRONT_VIEW_DIST;
 const int FRONT_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH;
 const int FRONT_IMG_CROP_HEIGHT = FRONT_VIEW_DIST;
 
@@ -59,9 +59,9 @@ const int RIGHT_IMG_CROP_START_Y = 0;
 const int RIGHT_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH - RIGHT_CROPED_START_X;
 const int RIGHT_IMG_CROP_HEIGHT = 1280;
 
-const int LEFT_IMG_CROP_WIDTH = (SURROUND_VIEW_IMG_WIDTH - CAR_IMG_WIDTH)/2;
+const int LEFT_IMG_CROP_WIDTH = 558;//(SURROUND_VIEW_IMG_WIDTH - CAR_IMG_WIDTH)/2;
 const int LEFT_IMG_CROP_HEIGHT = RIGHT_IMG_CROP_HEIGHT;
-const int LEFT_IMG_CROP_START_X = 642 - LEFT_IMG_CROP_WIDTH;//right edge on rotated left img
+const int LEFT_IMG_CROP_START_X = 596 - LEFT_IMG_CROP_WIDTH;//right edge on rotated left img
 const int LEFT_IMG_CROP_START_Y = 0;
 
 const int FRONT_RIGHT_MERGE_ROW_DIFF = RIGHT_CROPED_START_Y - RIGHT_IMG_CROP_START_Y;
@@ -69,7 +69,7 @@ const int FRONT_RIGHT_MERGE_COL_DIFF = RIGHT_CROPED_START_X - RIGHT_IMG_CROP_STA
 const int FRONT_LEFT_MERGE_ROW_DIFF = LEFT_CROPED_START_Y - LEFT_IMG_CROP_START_Y;
 const int FRONT_LEFT_MERGE_COL_DIFF = LEFT_CROPED_START_X - LEFT_IMG_CROP_START_X;
 
-const int TOP_MERGE_START_Y = 470;//280;
+const int TOP_MERGE_START_Y = 326;//280;
 const int BOT_MERGE_END_Y = 1440;//1322;
 
 
@@ -88,11 +88,13 @@ cv::Mat perspectiveHomography[CAMERA_NUM];
 // cv::cuda::GpuMat gpuInput[CAMERA_NUM];
 // cv::cuda::GpuMat gpuOutput[CAMERA_NUM];
 
+cv::Size undistorSize, perspectiveSize;
+
 void frameProc(int camId)
 {
 	cameras[camId] >> frames[camId];
-	cv::remap(frames[camId], undistoredFrames[camId], mapx[camId], mapy[camId], cv::INTER_LINEAR);
-	cv::warpPerspective(undistoredFrames[camId], persprctiveImgs[camId], perspectiveHomography[camId], Size(PERSPECTIVE_IMT_WIDTH,PERSPECTIVE_IMT_HEIGHT));
+	cv::remap(frames[camId], undistoredFrames[camId], mapx[camId], mapy[camId], cv::INTER_CUBIC);
+	cv::warpPerspective(undistoredFrames[camId], persprctiveImgs[camId], perspectiveHomography[camId], perspectiveSize);
 	// gpuInput[camId].upload(undistoredFrames[camId]);
 	// cv::cuda::warpPerspective( gpuInput[camId], gpuOutput[camId], perspectiveHomography[camId], Size(PERSPECTIVE_IMT_WIDTH,PERSPECTIVE_IMT_HEIGHT));//, INTER_LINEAR , BORDER_CONSTANT, 0, Stream::Null() );  
 	// gpuOutput[camId].download(persprctiveImgs[camId]);
@@ -123,8 +125,11 @@ int main()
 
 
 	cv::Size imgSize = Size(CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT);
-	float scale = 1.0;
-	cv::Size undistorSize = Size(imgSize.width*scale,imgSize.height*scale);
+	float scale = 1.5;
+	undistorSize = Size(imgSize.width*scale,imgSize.height*scale);
+	scale = 1.0;
+	perspectiveSize = Size(undistorSize.width*scale,undistorSize.height*scale);
+
     
 	cv::Matx33d intrinsic_matrix[CAMERA_NUM];
 	cv::Vec4d distortion_coeffs[CAMERA_NUM];
@@ -174,13 +179,14 @@ int main()
 	for(int i=0;i<CAMERA_NUM;i++)
 	{
 		cout<<"camera:"<<i<<endl<<intrinsic_matrix[i]<<endl<<distortion_coeffs[i]<<endl;
+		fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.85f, undistorSize, 1.0);
 		cv::fisheye::initUndistortRectifyMap(intrinsic_matrix[i], distortion_coeffs[i], R, newMatrix[i], imgSize, CV_32FC1, mapx[i], mapy[i]);
 	}
 
-	// for(int i=0;i<CAMERA_NUM;i++)
-	for(int i=0;i<2;i++)
+	for(int i=0;i<CAMERA_NUM;i++)
+	// for(int i=0;i<2;i++)
 	{
-		cameras[i].open(i*2);
+		cameras[i].open(i);
 		// cameras[i].release();
 		// cameras[i].open(i*2);
 		if(!cameras[i].isOpened())
@@ -199,17 +205,17 @@ int main()
 	
 	//for every vector, 4 points are stored in order of leftbottom, rightbottom, righttop, lefttop
 	vector<Point2f> srcPts[CAMERA_NUM] = {
-		{cv::Point2f(186,517), cv::Point2f(615, 357), cv::Point2f(1059,367), cv::Point2f(1226,461)},	//front camera
-		{cv::Point2f(399, 579), cv::Point2f(509, 494), cv::Point2f(938, 495), cv::Point2f(1025, 558)},	//left camera
-		{cv::Point2f(174,422), cv::Point2f(523, 278), cv::Point2f(871,302), cv::Point2f(1177,399)},	//back camera
-		{cv::Point2f(54, 681), cv::Point2f(199, 607), cv::Point2f(1048, 600), cv::Point2f(1107, 648)},	//right camera
+		{cv::Point2f(316,626), cv::Point2f(1022, 397), cv::Point2f(1587,427), cv::Point2f(1861,560)},	//front camera
+		{cv::Point2f(174,675), cv::Point2f(678, 562), cv::Point2f(1423,568), cv::Point2f(1642,702)},	//left camera
+		{cv::Point2f(532,663), cv::Point2f(869, 486), cv::Point2f(1196,500), cv::Point2f(1578,655)},	//back camera
+		{cv::Point2f(434,506), cv::Point2f(532, 442), cv::Point2f(939,459), cv::Point2f(1106,618)},	//right camera
 	};
 
 	vector<Point2f> dstPts[CAMERA_NUM] = {
-		{cv::Point2f(218,665), cv::Point2f(222, 454), cv::Point2f(998, 464), cv::Point2f(997,615)},
-		{cv::Point2f(317, 634), cv::Point2f(314, 510), cv::Point2f(1022, 502), cv::Point2f(1022, 608)},
-		{cv::Point2f(342,639), cv::Point2f(348, 266), cv::Point2f(1083,432), cv::Point2f(1082,615)},
-		{cv::Point2f(281, 701), cv::Point2f(284, 650), cv::Point2f(1145, 643), cv::Point2f(1144, 680)},
+		{cv::Point2f(690,948), cv::Point2f(686, 408), cv::Point2f(1432, 570), cv::Point2f(1436,882)},
+		{cv::Point2f(184,860), cv::Point2f(242, 518), cv::Point2f(1646,436), cv::Point2f(1646,836)},
+		{cv::Point2f(480,988), cv::Point2f(480, 608), cv::Point2f(1230,664), cv::Point2f(1230,968)},
+		{cv::Point2f(446,591), cv::Point2f(445, 458), cv::Point2f(1055,468), cv::Point2f(1057,638)},
 	};
 
 	for(int i=0;i<CAMERA_NUM;i++)
@@ -219,7 +225,7 @@ int main()
 
 	ret = cv::Mat(Size(SURROUND_VIEW_IMG_WIDTH, SURROUND_VIEW_IMG_HEIGHT),CV_8UC3,Scalar(0, 0, 0));
 	cv::Mat carImg = cv::imread("car.png");
-	cv::resize(carImg, carImg, cv::Size(CAR_IMG_WIDTH, CAR_IMG_HEIGHT+80));
+	cv::resize(carImg, carImg, cv::Size(CAR_IMG_WIDTH, CAR_IMG_HEIGHT));
 	
 	int frameCnt = 0;
 	while(true)
@@ -246,6 +252,15 @@ int main()
 		perspectiveBack = persprctiveImgs[2];
 		perspectiveRight = persprctiveImgs[3];
 
+		resize(perspectiveFront,perspectiveFront,Size(1280,720));
+		resize(perspectiveLeft,perspectiveLeft,Size(1280,720));
+		resize(perspectiveRight,perspectiveRight,Size(1280,720));
+		resize(perspectiveBack,perspectiveBack,Size(1280,720));
+
+		cv::Mat convertedLeft;
+		perspectiveLeft.convertTo(convertedLeft, perspectiveLeft.type(), 1.45, -38);
+
+
 		frontCroped = perspectiveFront(Rect(FRONT_IMG_CROP_START_X, FRONT_IMG_CROP_START_Y, FRONT_IMG_CROP_WIDTH, FRONT_IMG_CROP_HEIGHT)).clone();
 		backCroped = perspectiveBack(Rect(BACK_IMG_CROP_START_X, BACK_IMG_CROP_START_Y, BACK_IMG_CROP_WIDTH, BACK_IMG_CROP_HEIGHT)).clone();
 		
@@ -254,11 +269,11 @@ int main()
 		transpose(perspectiveRight, perspectiveRight);
 		flip(perspectiveRight, perspectiveRight, 1);
 		
-		transpose(perspectiveLeft, perspectiveLeft);
-		flip(perspectiveLeft, perspectiveLeft, 0);
+		transpose(convertedLeft, convertedLeft);
+		flip(convertedLeft, convertedLeft, 0);
 
 		rightCroped = perspectiveRight(Rect(RIGHT_IMG_CROP_START_X, RIGHT_IMG_CROP_START_Y, RIGHT_IMG_CROP_WIDTH, RIGHT_IMG_CROP_HEIGHT)).clone();
-		leftCroped = perspectiveLeft(Rect(LEFT_IMG_CROP_START_X, LEFT_IMG_CROP_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)).clone();
+		leftCroped = convertedLeft(Rect(LEFT_IMG_CROP_START_X, LEFT_IMG_CROP_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)).clone();
 
 		rightCroped.copyTo(ret(Rect(RIGHT_CROPED_START_X, RIGHT_CROPED_START_Y, RIGHT_IMG_CROP_WIDTH,RIGHT_IMG_CROP_HEIGHT)));
 		leftCroped.copyTo(ret(Rect(LEFT_CROPED_START_X, LEFT_CROPED_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)));
@@ -340,6 +355,13 @@ int main()
 				// cout<<"	back right merge area:"<<mergeColStart<<",,";
 			}
 		}
+
+		ret = ret(Rect(0,0,SURROUND_VIEW_IMG_WIDTH, 1450));
+		cv::Mat tmp;
+		// cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
+		cv::GaussianBlur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(19, 19), 15);
+		tmp.copyTo(ret(Rect(0, 300, 300, 140)));
+
 		endTime = std::chrono::steady_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 		cout<<"one frame SpendTime = "<<  duration.count() <<"ms"<<endl;

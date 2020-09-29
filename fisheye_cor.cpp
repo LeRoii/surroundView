@@ -57,7 +57,7 @@ int main()
 
 	// cout<<newintrinsic_matrix<<endl;
 
-	std::string foldername = "./bk/0923/";
+	std::string foldername = "./bk/0928/";
 
 	cv::Mat distoredFront = cv::imread(foldername + "front.png");
 	cv::Mat distoredLeft = cv::imread(foldername + "left.png");
@@ -98,7 +98,7 @@ int main()
 	for(int i=0;i<4;i++)
 	{
 		// cout<<"camera:"<<i<<endl<<intrinsic_matrix[i]<<endl<<distortion_coeffs[i]<<endl<<endl;
-		fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.85f, undistorSize, 1.0);
+		fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix[i], distortion_coeffs[i], imgSize, R, newMatrix[i], 0.9f, undistorSize, 1.0);
 		// newMatrix[i].at<float>(0,2) = CAMERA_FRAME_WIDTH/2;
     	// newMatrix[i].at<float>(1,2) = CAMERA_FRAME_HEIGHT/2;
 		cout<<"estimateNewCameraMatrixForUndistortRectify"<<endl<<newMatrix[i]<<endl<<endl;
@@ -354,10 +354,9 @@ int main()
 	// resize(ret,ret,Size(1000,1000));
 	ret = ret(Rect(0,0,SURROUND_VIEW_IMG_WIDTH, 1450));
 	cv::Mat tmp;
-	cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
-	cv::blur(tmp, tmp, cv::Size(10, 10));
-	cv::blur(tmp, tmp, cv::Size(10, 10));
-	cv::blur(tmp, tmp, cv::Size(10, 10));
+	// cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
+
+	cv::GaussianBlur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(19, 19), 15);
 
 	tmp.copyTo(ret(Rect(0, 300, 300, 140)));
 
