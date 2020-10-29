@@ -281,7 +281,7 @@ int main()
 		leftCroped.copyTo(ret(Rect(LEFT_CROPED_START_X, LEFT_CROPED_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)));
 		frontCroped.copyTo(ret(Rect(FRONT_CROPED_START_X, FRONT_CROPED_START_Y, FRONT_IMG_CROP_WIDTH, FRONT_IMG_CROP_HEIGHT)));
 		backCroped.copyTo(ret(Rect(BACK_CROPED_START_X, BACK_CROPED_START_Y, BACK_IMG_CROP_WIDTH, BACK_IMG_CROP_HEIGHT)));
-		carImg.copyTo(ret(Rect(CAR_IMG_START_X, CAR_IMG_START_Y, CAR_IMG_WIDTH, CAR_IMG_HEIGHT+80)));
+		carImg.copyTo(ret(Rect(CAR_IMG_START_X, CAR_IMG_START_Y, CAR_IMG_WIDTH, CAR_IMG_HEIGHT)));
 
 
 		//front right merge
@@ -358,19 +358,23 @@ int main()
 			}
 		}
 
-		ret = ret(Rect(0,0,SURROUND_VIEW_IMG_WIDTH, 1450));
-		cv::Mat tmp;
-		// cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
-		cv::GaussianBlur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(19, 19), 15);
-		tmp.copyTo(ret(Rect(0, 300, 300, 140)));
+		// ret = ret(Rect(0,0,SURROUND_VIEW_IMG_WIDTH, 1450));
+		// cv::Mat tmp;
+		// // cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
+		// cv::GaussianBlur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(19, 19), 15);
+		// tmp.copyTo(ret(Rect(0, 300, 300, 140)));
 
-		endTime = std::chrono::steady_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-		cout<<"one frame SpendTime = "<<  duration.count() <<"ms"<<endl;
+		// endTime = std::chrono::steady_clock::now();
+		// duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+		// cout<<"one frame SpendTime = "<<  duration.count() <<"ms"<<endl;
 
-		cv::Mat rett;
-		cv::resize(ret,rett,Size(1024,1024));
-		cv::imshow("ret",rett);
+		// cv::Mat rett;
+		// cv::resize(ret,rett,Size(1024,1024));
+
+		ret = ret(Rect(10,0,SURROUND_VIEW_IMG_WIDTH-10, 1590));
+		resize(ret,ret,Size(600,1100));
+
+		cv::imshow("ret",ret);
 		cv::waitKey(1);
 	}
 
