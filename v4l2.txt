@@ -1,0 +1,3 @@
+sudo apt-get install v4l-utils
+v4l2-ctl --list-devices
+find /usr/ -name v4l1compat.so
