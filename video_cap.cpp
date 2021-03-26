@@ -35,16 +35,16 @@ int main(int argc, char* argv[])
 				printf("camera %d open failed\n",i);
 				return 0;
 			}
-			caps[i].set(cv::CAP_PROP_FRAME_WIDTH,1280);
-			caps[i].set(cv::CAP_PROP_FRAME_HEIGHT,720);
+			// caps[i].set(cv::CAP_PROP_FRAME_WIDTH,1280);
+			// caps[i].set(cv::CAP_PROP_FRAME_HEIGHT,720);
 		}
 	}
 	else
 	{
 		printf("open camera :%d\n", atoi(argv[1]));
 		caps[0].open(atoi(argv[1]));
-		caps[0].set(cv::CAP_PROP_FRAME_WIDTH,1280);
-		caps[0].set(cv::CAP_PROP_FRAME_HEIGHT,720);
+		caps[0].set(cv::CAP_PROP_FRAME_WIDTH,960);
+		caps[0].set(cv::CAP_PROP_FRAME_HEIGHT,640);
 	}
 
 	//gst_testsink.open("appsrc ! queue ! videoconvert ! video/x-raw, format=RGBA ! nvvidconv ! nvoverlaysink ", cv::CAP_GSTREAMER, 0, 3, cv::Size(1280, 720));
@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 				break;
    			}
 			imshow("CamShow",img[0]);
+			printf("img width:%d, img height:%d\n", img[0].cols, img[0].rows);
 			if(command == "p")
 			{
 				string filename;

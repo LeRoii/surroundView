@@ -14,8 +14,8 @@ int main()
     *************************************************************************/   
     cout<<"start extract corners"<<endl; 
 	//以下三行为需要手动修改的参数
-    int image_count=  24;                   //图像数量
-    Size board_size = Size(6,4);            //定标板上每行、列的角点数
+    int image_count=  49;                   //图像数量
+    Size board_size = Size(11,8);            //定标板上每行、列的角点数
 	int x_expand = 0,y_expand = 0;		//x,y方向的扩展(x横向，y纵向)，适当增大可以不损失原图像信息
 
     vector<Point2f> corners;                //缓存每幅图像上检测到的角点
@@ -23,15 +23,19 @@ int main()
     vector<Mat>  image_Seq;
 	int successImageNum = 0;				//成功提取角点的棋盘图数量	
 	bool conner_flag = true;				//所有图像角点提取成功为true，其余为false
-    for( int i = 0;  i != image_count ; i++)
+    for( int i = 1;  i <= image_count ; i++)
     {
-        cout<<"img"<<i+1<<"..."<<endl;
+        cout<<"img"<<i<<"..."<<endl;
         string imageFileName;
         std::stringstream StrStm;
-        StrStm<<i+1;
+        StrStm<<i;
         StrStm>>imageFileName;
         imageFileName += ".png";
-        cv::Mat image = imread("../../calib1280_back/img"+imageFileName); 
+        cv::Mat image = imread("/space/code/multiview/v2/data/calib0326/img"+imageFileName); 
+        if(image.empty())
+        {
+            printf("image empty\n");
+        }
 		//Mat image;//边界扩展后的图片
 		//copyMakeBorder(imageSrc,image,(int)(y_expand/2),(int)(y_expand/2),(int)(x_expand/2),(int)(x_expand/2),BORDER_CONSTANT);
         /* 提取角点 */   
@@ -41,9 +45,10 @@ int main()
             CALIB_CB_FAST_CHECK );
         if (!patternfound)   
         {   
-			cout<<"img"<<i+1<<"corner extract failed"<<endl;  
+			cout<<"img"<<i<<"corner extract failed"<<endl;  
             conner_flag = false;
-			break;
+			// break;
+            continue;
         } 
         else
         {   
@@ -57,22 +62,22 @@ int main()
             }
             string imageFileName;
             std::stringstream StrStm;
-            StrStm<<i+1;
+            StrStm<<i;
             StrStm>>imageFileName;
             imageFileName += "_corner.jpg";
             imwrite(imageFileName,imageTemp);
-            cout<<"img"<<i+1<<"corner extract completed"<<endl;
+            cout<<"img"<<i<<"corner extract completed"<<endl;
 
 			successImageNum = successImageNum + 1;
             corners_Seq.push_back(corners);
         }   
         image_Seq.push_back(image);
     }   
-	if (!conner_flag)//如果有提取失败的标定图，退出程序
-	{
-		cout<<"corner extract failed"<<endl;
-		return 0;
-	}
+	// if (!conner_flag)//如果有提取失败的标定图，退出程序
+	// {
+	// 	cout<<"corner extract failed"<<endl;
+	// 	return 0;
+	// }
     cout<<"corner extract completed"<<endl; 
     /************************************************************************  
            摄像机定标  
@@ -143,8 +148,8 @@ int main()
         }
         err = norm(image_points2Mat, tempImagePointMat, NORM_L2);
         total_err += err/=  point_counts[i];   
-        cout<<"No:"<<i+1<<"img mean error"<<err<<"pixel"<<endl;
-        fout<<"No:"<<i+1<<"img mean error"<<err<<"pixel"<<endl;
+        cout<<"No:"<<i<<"img mean error"<<err<<"pixel"<<endl;
+        fout<<"No:"<<i<<"img mean error"<<err<<"pixel"<<endl;
     }   
     cout<<"total mean error:"<<total_err/image_count<<"pixel"<<endl;
     fout<<"total mean error:"<<total_err/image_count<<"pixel"<<endl<<endl;
@@ -166,14 +171,14 @@ int main()
     
     for (int i=0; i<image_count; i++) 
     { 
-        fout<<"No:"<<i+1<<"img rotation vector"<<endl;   
+        fout<<"No:"<<i<<"img rotation vector"<<endl;   
         fout<<rotation_vectors[i]<<endl;   
 
         /* 将旋转向量转换为相对应的旋转矩阵 */   
         Rodrigues(rotation_vectors[i],rotation_matrix);   
-        fout<<"No:"<<i+1<<"img rotation matrice"<<endl;   
+        fout<<"No:"<<i<<"img rotation matrice"<<endl;   
         fout<<rotation_matrix<<endl;   
-        fout<<"No:"<<i+1<<"img traslation vector"<<endl;   
+        fout<<"No:"<<i<<"img traslation vector"<<endl;   
         fout<<translation_vectors[i]<<endl;   
     }   
     cout<<"saving completed"<<endl; 
@@ -183,8 +188,9 @@ int main()
     /************************************************************************  
            显示定标结果  
     *************************************************************************/
-    Size undistorSize = Size(image_size.width*1.5,image_size.height*1.5);
-    undistorSize = image_size;
+    float scale = 1.0f;
+    Size undistorSize = Size(image_size.width*scale,image_size.height*scale);
+    // undistorSize = image_size;
     Mat mapx = Mat(undistorSize,CV_32FC1);
     Mat mapy = Mat(undistorSize,CV_32FC1);
     Mat R = Mat::eye(3,3,CV_32F);
@@ -197,11 +203,11 @@ int main()
     // optMatrix.at<double>(0,0) = optMatrix.at<double>(0,0)/2;
     // optMatrix.at<double>(1,1) = optMatrix.at<double>(1,1)/2;
 
-    fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix, distortion_coeffs, image_size, R, newMatrix, 0.5f, undistorSize);
+    fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix, distortion_coeffs, image_size, R, newMatrix, 0.0f, undistorSize);
     //balance=1 reserve all pixel
 	cout<<"estimateNewCameraMatrixForUndistortRectify"<<endl<<newMatrix<<endl;   
 
-    for (int i = 0 ; i != image_count ; i++)
+    for (int i = 0 ; i < image_count ; i++)
     {
 		fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs, R, newMatrix, undistorSize,CV_32FC1,mapx,mapy);
         // fisheye::initUndistortRectifyMap(intrinsic_matrix, distortion_coeffs, R,
