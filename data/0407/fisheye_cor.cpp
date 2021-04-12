@@ -57,7 +57,7 @@ int main()
 
 	// cout<<newintrinsic_matrix<<endl;
 
-	std::string foldername = "/space/code/multiview/v2/data/0407/";
+	std::string foldername = "/home/zpwang/panaimg/";
 
 	cv::Mat distoredFront = cv::imread(foldername + "front.png");
 	cv::Mat distoredLeft = cv::imread(foldername + "left.png");
@@ -123,8 +123,8 @@ int main()
 	// //find H
 
 	//right
-	vector<Point2f> srcPts = {cv::Point2f(266,527), cv::Point2f(330, 449), cv::Point2f(1129,396), cv::Point2f(1215,445)};
-	vector<Point2f> dstPts = {cv::Point2f(298,592), cv::Point2f(298, 492), cv::Point2f(1058,488), cv::Point2f(1068,586)};
+	vector<Point2f> srcPts = {cv::Point2f(289,516), cv::Point2f(392, 392), cv::Point2f(1038,383), cv::Point2f(1134,448)};
+	vector<Point2f> dstPts = {cv::Point2f(283,563), cv::Point2f(283, 364), cv::Point2f(1132,399), cv::Point2f(1150,566)};
 	Mat hRight = findHomography(srcPts, dstPts);
 	
 
@@ -132,6 +132,8 @@ int main()
 	srcPts = {cv::Point2f(202,520), cv::Point2f(333, 445), cv::Point2f(843,444), cv::Point2f(908,502)};
 	dstPts = {cv::Point2f(156,636), cv::Point2f(154, 559), cv::Point2f(962, 561), cv::Point2f(962,627)};
 	Mat hFront = findHomography(srcPts, dstPts);
+	// Mat hFront = (cv::Mat_<float>(3,3)<<0.1011, 0.5896, -772.2538, -0.0708, 1.5019, -1759.8974, -0.0000, 0.0009, -1.0000);
+	// Mat hFront = (cv::Mat_<double>(3,3)<<0.4048, 2.7428, -1023.2658, -0.0322, 3.0527, -895.9248, -0.0000, 0.0039, -1.0000);
 
 	cout<<"hFront:"<<hFront<<endl;
 
@@ -198,16 +200,16 @@ int main()
 	cv::imwrite("perspectiveLeftconverted.png",convertedLeft);
 
 
-	const int SURROUND_VIEW_IMG_WIDTH = 1280;
-	const int SURROUND_VIEW_IMG_HEIGHT = 1710;
+	const int SURROUND_VIEW_IMG_WIDTH = 1500;
+	const int SURROUND_VIEW_IMG_HEIGHT = 1500;
 
 	const int PERSPECTIVE_IMT_WIDTH = 1280;
 	const int PERSPECTIVE_IMT_HEIGHT = 720;
 
 	const int CAR_IMG_WIDTH = 530;
-	const int CAR_IMG_HEIGHT = 708;
-	const int CAR_IMG_START_X = 370;//SURROUND_VIEW_IMG_WIDTH/2 - CAR_IMG_WIDTH/2;
-	const int CAR_IMG_START_Y = 500;//SURROUND_VIEW_IMG_HEIGHT/2 - CAR_IMG_HEIGHT/2;
+	const int CAR_IMG_HEIGHT = 550;
+	const int CAR_IMG_START_X = 440;//SURROUND_VIEW_IMG_WIDTH/2 - CAR_IMG_WIDTH/2;
+	const int CAR_IMG_START_Y = 498;//SURROUND_VIEW_IMG_HEIGHT/2 - CAR_IMG_HEIGHT/2;
 
 	//pixel on surround view img
 	const int FRONT_VIEW_DIST = 500;//in pixel
@@ -215,9 +217,9 @@ int main()
 	const int FRONT_CROPED_START_X = 0;
 	const int FRONT_CROPED_START_Y = 0;
 	const int RIGHT_CROPED_START_X = 900;//SURROUND_VIEW_IMG_WIDTH/2 + CAR_IMG_WIDTH/2;
-	const int RIGHT_CROPED_START_Y = 220;
+	const int RIGHT_CROPED_START_Y = 340;
 	const int LEFT_CROPED_START_X = 0;
-	const int LEFT_CROPED_START_Y = RIGHT_CROPED_START_Y;
+	const int LEFT_CROPED_START_Y = 340;
 	const int BACK_CROPED_START_X = 0;
 	const int BACK_CROPED_START_Y = FRONT_VIEW_DIST + CAR_IMG_HEIGHT;
 
@@ -237,32 +239,20 @@ int main()
 	const int RIGHT_IMG_CROP_START_X = 142;
 	const int RIGHT_IMG_CROP_START_Y = 0;
 	const int RIGHT_IMG_CROP_WIDTH = PERSPECTIVE_IMT_WIDTH - RIGHT_CROPED_START_X;
-	const int RIGHT_IMG_CROP_HEIGHT = 1280-RIGHT_IMG_CROP_START_X;
+	const int RIGHT_IMG_CROP_HEIGHT = 1280;
 	
-	const int LEFT_IMG_CROP_START_Y = 0;
 	const int LEFT_IMG_CROP_WIDTH = 370;//(SURROUND_VIEW_IMG_WIDTH - CAR_IMG_WIDTH)/2;
-	const int LEFT_IMG_CROP_HEIGHT = 1280-132;
+	const int LEFT_IMG_CROP_HEIGHT = RIGHT_IMG_CROP_HEIGHT;
 	const int LEFT_IMG_CROP_START_X = 540 - LEFT_IMG_CROP_WIDTH;//right edge on rotated left img
+	const int LEFT_IMG_CROP_START_Y = 132;
 
 	const int FRONT_RIGHT_MERGE_ROW_DIFF = RIGHT_CROPED_START_Y - RIGHT_IMG_CROP_START_Y;
 	const int FRONT_RIGHT_MERGE_COL_DIFF = RIGHT_CROPED_START_X - RIGHT_IMG_CROP_START_X;
 	const int FRONT_LEFT_MERGE_ROW_DIFF = LEFT_CROPED_START_Y - LEFT_IMG_CROP_START_Y;
 	const int FRONT_LEFT_MERGE_COL_DIFF = LEFT_CROPED_START_X - LEFT_IMG_CROP_START_X;
 
-	// blur params
-
-	const int BLUR_RECT_WIDTH = 360;
-	const int BLUR_RECT_HEIGHT = 50;
-
 	const int TOP_MERGE_START_Y = 330;//280;
 	const int BOT_MERGE_END_Y = 1066;//1322;
-
-
-	//resiez 
-	const int INPUT_RESIZE_WIDTH = 320;
-	const int INPUT_RESIZE_HEIGHT = 180;
-	const int OUTPUT_RESIZE_WIDTH = 190;
-	const int OUTPUT_RESIZE_HEIGHT = 360;
 
 	cv::Mat frontCroped, leftCroped, rightCroped, backCroped, ret;
 	ret = cv::Mat(Size(SURROUND_VIEW_IMG_WIDTH, SURROUND_VIEW_IMG_HEIGHT),CV_8UC3,Scalar(255, 255, 255));
@@ -292,137 +282,109 @@ int main()
 	cv::imwrite("cropleft.png",leftCroped);
 
 	leftCroped.copyTo(ret(Rect(LEFT_CROPED_START_X, LEFT_CROPED_START_Y, LEFT_IMG_CROP_WIDTH, LEFT_IMG_CROP_HEIGHT)));
+
+		
+	
+
+	
 	rightCroped.copyTo(ret(Rect(RIGHT_CROPED_START_X, RIGHT_CROPED_START_Y, RIGHT_IMG_CROP_WIDTH,RIGHT_IMG_CROP_HEIGHT)));
 	frontCroped.copyTo(ret(Rect(FRONT_CROPED_START_X, FRONT_CROPED_START_Y, FRONT_IMG_CROP_WIDTH, FRONT_IMG_CROP_HEIGHT)));
 	backCroped.copyTo(ret(Rect(BACK_CROPED_START_X, BACK_CROPED_START_Y, BACK_IMG_CROP_WIDTH, BACK_IMG_CROP_HEIGHT)));
 
 		// carImg.copyTo(ret(Rect(CAR_IMG_START_X, CAR_IMG_START_Y, CAR_IMG_WIDTH, CAR_IMG_HEIGHT+80)));
 
-	carImg.copyTo(ret(Rect(CAR_IMG_START_X, CAR_IMG_START_Y, CAR_IMG_WIDTH, CAR_IMG_HEIGHT)));
+	// carImg.copyTo(ret(Rect(CAR_IMG_START_X, CAR_IMG_START_Y, CAR_IMG_WIDTH, CAR_IMG_HEIGHT)));
 
 	//front right merge
-	// int x1 = PERSPECTIVE_IMT_WIDTH;
-	// int y1 = TOP_MERGE_START_Y;
-	// int x2 = RIGHT_CROPED_START_X;
-	// int y2 = FRONT_VIEW_DIST;
+	int x1 = PERSPECTIVE_IMT_WIDTH;
+	int y1 = TOP_MERGE_START_Y;
+	int x2 = RIGHT_CROPED_START_X;
+	int y2 = FRONT_VIEW_DIST;
 
-	// int mergeColStart;// = PERSPECTIVE_IMT_WIDTH;
+	int mergeColStart;// = PERSPECTIVE_IMT_WIDTH;
 
-	// for(int i = y1;i<=y2;i++)
-	// {
-	// 	mergeColStart = (i-y1)*(x2-x1)/(y2-y1)+x1;
-	// 	for(;mergeColStart<=SURROUND_VIEW_IMG_WIDTH;mergeColStart++)
-	// 	{
-	// 		ret.at<Vec3b>(i,mergeColStart)[0] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
-	// 		ret.at<Vec3b>(i,mergeColStart)[1] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
-	// 		ret.at<Vec3b>(i,mergeColStart)[2] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
+	for(int i = y1;i<=y2;i++)
+	{
+		mergeColStart = (i-y1)*(x2-x1)/(y2-y1)+x1;
+		for(;mergeColStart<=SURROUND_VIEW_IMG_WIDTH;mergeColStart++)
+		{
+			ret.at<Vec3b>(i,mergeColStart)[0] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,mergeColStart)[1] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,mergeColStart)[2] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
 
-	// 		// cout<<"	front right merge area:"<<mergeColStart<<",,";
-	// 	}
-	// }
+			// cout<<"	front right merge area:"<<mergeColStart<<",,";
+		}
+	}
 
-	// // front left merge
-	// x1 = LEFT_CROPED_START_X;
-	// y1 = TOP_MERGE_START_Y;
-	// x2 = LEFT_IMG_CROP_WIDTH;
-	// y2 = FRONT_VIEW_DIST;
+	// front left merge
+	x1 = LEFT_CROPED_START_X;
+	y1 = TOP_MERGE_START_Y;
+	x2 = LEFT_IMG_CROP_WIDTH;
+	y2 = FRONT_VIEW_DIST;
 
-	// for(int i = y1;i<=y2;i++)
-	// {
-	// 	int j_limt = (i-y1)*(x2-x1)/(y2-y1)+x1;
-	// 	for(int j=0;j<=j_limt;j++)
-	// 	{
-	// 		ret.at<Vec3b>(i,j)[0] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
-	// 		ret.at<Vec3b>(i,j)[1] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
-	// 		ret.at<Vec3b>(i,j)[2] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
-	// 	}
-	// }
+	for(int i = y1;i<=y2;i++)
+	{
+		int j_limt = (i-y1)*(x2-x1)/(y2-y1)+x1;
+		for(int j=0;j<=j_limt;j++)
+		{
+			ret.at<Vec3b>(i,j)[0] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,j)[1] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,j)[2] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
+		}
+	}
 
 	//back left merge
-	// x1 = LEFT_CROPED_START_X;
-	// y1 = BOT_MERGE_END_Y;
-	// x2 = LEFT_IMG_CROP_WIDTH;
-	// y2 = BACK_CROPED_START_Y;
+	x1 = LEFT_CROPED_START_X;
+	y1 = BOT_MERGE_END_Y;
+	x2 = LEFT_IMG_CROP_WIDTH;
+	y2 = BACK_CROPED_START_Y;
 
-	// for(int i=y2;i<y1;i++)
-	// {
-	// 	int j_limt = (i-y1)*(x2-x1)/(y2-y1)+x1;
-	// 	for(int j=0;j<=j_limt;j++)
-	// 	{
-	// 		ret.at<Vec3b>(i,j)[0] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
-	// 		ret.at<Vec3b>(i,j)[1] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
-	// 		ret.at<Vec3b>(i,j)[2] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
-	// 	}
-	// }
+	for(int i=y2;i<y1;i++)
+	{
+		int j_limt = (i-y1)*(x2-x1)/(y2-y1)+x1;
+		for(int j=0;j<=j_limt;j++)
+		{
+			ret.at<Vec3b>(i,j)[0] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,j)[1] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,j)[2] = convertedLeft.at<Vec3b>(i-FRONT_LEFT_MERGE_ROW_DIFF,j-FRONT_LEFT_MERGE_COL_DIFF)[2];
+		}
+	}
 
-	// //back right merge
-	// x1 = SURROUND_VIEW_IMG_WIDTH;
-	// y1 = BOT_MERGE_END_Y;
-	// x2 = RIGHT_CROPED_START_X;
-	// y2 = BACK_CROPED_START_Y;
+	//back right merge
+	x1 = SURROUND_VIEW_IMG_WIDTH;
+	y1 = BOT_MERGE_END_Y;
+	x2 = RIGHT_CROPED_START_X;
+	y2 = BACK_CROPED_START_Y;
 
-	// for(int i=y2;i<y1;i++)
-	// {
-	// 	mergeColStart = (i-y1)*(x2-x1)/(y2-y1)+x1;
-	// 	for(;mergeColStart<=x1;mergeColStart++)
-	// 	{
-	// 		ret.at<Vec3b>(i,mergeColStart)[0] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
-	// 		ret.at<Vec3b>(i,mergeColStart)[1] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
-	// 		ret.at<Vec3b>(i,mergeColStart)[2] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
+	for(int i=y2;i<y1;i++)
+	{
+		mergeColStart = (i-y1)*(x2-x1)/(y2-y1)+x1;
+		for(;mergeColStart<=x1;mergeColStart++)
+		{
+			ret.at<Vec3b>(i,mergeColStart)[0] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[0];
+			ret.at<Vec3b>(i,mergeColStart)[1] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[1];
+			ret.at<Vec3b>(i,mergeColStart)[2] = convertedRight.at<Vec3b>(i-FRONT_RIGHT_MERGE_ROW_DIFF,mergeColStart-FRONT_RIGHT_MERGE_COL_DIFF)[2];
 
-	// 		// cout<<"	back right merge area:"<<mergeColStart<<",,";
-	// 	}
-	// }
+			// cout<<"	back right merge area:"<<mergeColStart<<",,";
+		}
+	}
 
-	
+	// // resize(ret,ret,Size(1000,1000));
 	// // ret = ret(Rect(0,0,SURROUND_VIEW_IMG_WIDTH, 1450));
+	// // cv::Mat tmp;
+	// // // cv::blur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(20, 20));
+
 	// // cv::GaussianBlur(ret(Rect(0, 300, 300, 140)), tmp, cv::Size(19, 19), 15);
 
-	//blur
-	cv::Mat tmp;
-	cv::blur(ret(Rect(BACK_CROPED_START_X, BACK_CROPED_START_Y-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)), tmp, cv::Size(15, 15));
-	tmp.copyTo(ret(Rect(BACK_CROPED_START_X, BACK_CROPED_START_Y-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)));
+	// // tmp.copyTo(ret(Rect(0, 300, 300, 140)));
 
-	cv::blur(ret(Rect(RIGHT_CROPED_START_X, BACK_CROPED_START_Y-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)), tmp, cv::Size(15, 15));
-	tmp.copyTo(ret(Rect(RIGHT_CROPED_START_X, BACK_CROPED_START_Y-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)));
-
-	cv::blur(ret(Rect(FRONT_CROPED_START_X, FRONT_VIEW_DIST-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)), tmp, cv::Size(15, 15));
-	tmp.copyTo(ret(Rect(FRONT_CROPED_START_X, FRONT_VIEW_DIST-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)));
-
-	cv::blur(ret(Rect(RIGHT_CROPED_START_X, FRONT_VIEW_DIST-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)), tmp, cv::Size(15, 15));
-	tmp.copyTo(ret(Rect(RIGHT_CROPED_START_X, FRONT_VIEW_DIST-10, BLUR_RECT_WIDTH, BLUR_RECT_HEIGHT)));
-
-	cv::imwrite("tmp.png",tmp);
-	cv::imwrite("ret.png",ret);
-
-	//resize
-	resize(distoredFront,distoredFront,Size(INPUT_RESIZE_WIDTH,INPUT_RESIZE_HEIGHT));
-	resize(distoredLeft,distoredLeft,Size(INPUT_RESIZE_WIDTH,INPUT_RESIZE_HEIGHT));
-	resize(distoredBack,distoredBack,Size(INPUT_RESIZE_WIDTH,INPUT_RESIZE_HEIGHT));
-	resize(distoredRight,distoredRight,Size(INPUT_RESIZE_WIDTH,INPUT_RESIZE_HEIGHT));
-	resize(ret,ret,Size(OUTPUT_RESIZE_WIDTH,OUTPUT_RESIZE_HEIGHT));
-
-	cv::putText(distoredFront, "front", cv::Point(15,25), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
-	cv::putText(distoredLeft, "left", cv::Point(15,25), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
-	cv::putText(distoredBack, "back", cv::Point(15,25), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
-	cv::putText(distoredRight, "right", cv::Point(15,25), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
-
-	cv::Mat inputSum, sub1, sub2, finalOut;
-	cv::hconcat(distoredFront, distoredBack, sub1);
-	cv::hconcat(distoredLeft, distoredRight, sub2);
-	cv::vconcat(sub1, sub2, inputSum);
-	cv::hconcat(inputSum, ret, finalOut);
-
-	cv::rectangle(finalOut,Rect(0,175,640,10),Scalar(0,0,0),-1);
-	cv::rectangle(finalOut,Rect(315,0,10,360),Scalar(0,0,0),-1);
-	cv::rectangle(finalOut,Rect(635,0,10,360),Scalar(0,0,0),-1);
-
-	
+	// // cv::imwrite("tmp.png",tmp);
 
 	// ret = ret(Rect(10,0,SURROUND_VIEW_IMG_WIDTH-10, 1590));
 	// resize(ret,ret,Size(600,1100));
 
-	cv::imwrite("finalOut.png",finalOut);
+
+	cv::imwrite("ret.png",ret);
 
 	return 0;
 

@@ -15,7 +15,7 @@ int main()
     cout<<"start extract corners"<<endl; 
 	//以下三行为需要手动修改的参数
     int image_count=  49;                   //图像数量
-    Size board_size = Size(11,8);            //定标板上每行、列的角点数
+    Size board_size = Size(6,4);            //定标板上每行、列的角点数
 	int x_expand = 0,y_expand = 0;		//x,y方向的扩展(x横向，y纵向)，适当增大可以不损失原图像信息
 
     vector<Point2f> corners;                //缓存每幅图像上检测到的角点
@@ -23,6 +23,7 @@ int main()
     vector<Mat>  image_Seq;
 	int successImageNum = 0;				//成功提取角点的棋盘图数量	
 	bool conner_flag = true;				//所有图像角点提取成功为true，其余为false
+    std::vector<int> successImgIdx;
     for( int i = 1;  i <= image_count ; i++)
     {
         cout<<"img"<<i<<"..."<<endl;
@@ -31,10 +32,11 @@ int main()
         StrStm<<i;
         StrStm>>imageFileName;
         imageFileName += ".png";
-        cv::Mat image = imread("/space/code/multiview/v2/data/calib0326/img"+imageFileName); 
+        cv::Mat image = imread("/space/code/multiview/calib1280_right/img"+imageFileName); 
         if(image.empty())
         {
             printf("image empty\n");
+            continue;
         }
 		//Mat image;//边界扩展后的图片
 		//copyMakeBorder(imageSrc,image,(int)(y_expand/2),(int)(y_expand/2),(int)(x_expand/2),(int)(x_expand/2),BORDER_CONSTANT);
@@ -70,6 +72,7 @@ int main()
 
 			successImageNum = successImageNum + 1;
             corners_Seq.push_back(corners);
+            successImgIdx.push_back(i);
         }   
         image_Seq.push_back(image);
     }   
@@ -83,7 +86,7 @@ int main()
            摄像机定标  
     *************************************************************************/   
     cout<<"start calibration"<<endl;  
-	Size square_size = Size(55,55);     
+	Size square_size = Size(55,55); //Size(55,55);     
 	vector<vector<Point3f>>  object_Points;        /****  保存定标板上角点的三维坐标   ****/
 
     vector<int>  point_counts;                                                         
@@ -132,7 +135,7 @@ int main()
     vector<Point2f>  image_points2;             /****   保存重新计算得到的投影点    ****/   
 
     cout<<"calibration error for each img"<<endl<<endl;   
-    for (int i=0;  i<image_count;  i++) 
+    for (int i=0;  i<successImageNum;  i++) 
     {
         vector<Point3f> tempPointSet = object_Points[i];
         /****    通过得到的摄像机内外参数，对空间的三维点进行重新投影计算，得到新的投影点     ****/
@@ -148,8 +151,8 @@ int main()
         }
         err = norm(image_points2Mat, tempImagePointMat, NORM_L2);
         total_err += err/=  point_counts[i];   
-        cout<<"No:"<<i<<"img mean error"<<err<<"pixel"<<endl;
-        fout<<"No:"<<i<<"img mean error"<<err<<"pixel"<<endl;
+        cout<<"No:"<<successImgIdx[i]<<"img mean error"<<err<<"pixel"<<endl;
+        fout<<"No:"<<successImgIdx[i]<<"img mean error"<<err<<"pixel"<<endl;
     }   
     cout<<"total mean error:"<<total_err/image_count<<"pixel"<<endl;
     fout<<"total mean error:"<<total_err/image_count<<"pixel"<<endl<<endl;
@@ -169,18 +172,18 @@ int main()
     cout<<intrinsic_matrix<<endl;   
     cout<<distortion_coeffs<<endl;     
     
-    for (int i=0; i<image_count; i++) 
-    { 
-        fout<<"No:"<<i<<"img rotation vector"<<endl;   
-        fout<<rotation_vectors[i]<<endl;   
+    // for (int i=0; i<image_count; i++) 
+    // { 
+    //     fout<<"No:"<<i<<"img rotation vector"<<endl;   
+    //     fout<<rotation_vectors[i]<<endl;   
 
-        /* 将旋转向量转换为相对应的旋转矩阵 */   
-        Rodrigues(rotation_vectors[i],rotation_matrix);   
-        fout<<"No:"<<i<<"img rotation matrice"<<endl;   
-        fout<<rotation_matrix<<endl;   
-        fout<<"No:"<<i<<"img traslation vector"<<endl;   
-        fout<<translation_vectors[i]<<endl;   
-    }   
+    //     /* 将旋转向量转换为相对应的旋转矩阵 */   
+    //     Rodrigues(rotation_vectors[i],rotation_matrix);   
+    //     fout<<"No:"<<i<<"img rotation matrice"<<endl;   
+    //     fout<<rotation_matrix<<endl;   
+    //     fout<<"No:"<<i<<"img traslation vector"<<endl;   
+    //     fout<<translation_vectors[i]<<endl;   
+    // }   
     cout<<"saving completed"<<endl; 
     fout<<endl;
 
@@ -203,11 +206,11 @@ int main()
     // optMatrix.at<double>(0,0) = optMatrix.at<double>(0,0)/2;
     // optMatrix.at<double>(1,1) = optMatrix.at<double>(1,1)/2;
 
-    fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix, distortion_coeffs, image_size, R, newMatrix, 0.0f, undistorSize);
+    fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsic_matrix, distortion_coeffs, image_size, R, newMatrix, 0.5f, undistorSize);
     //balance=1 reserve all pixel
 	cout<<"estimateNewCameraMatrixForUndistortRectify"<<endl<<newMatrix<<endl;   
 
-    for (int i = 0 ; i < image_count ; i++)
+    for (int i = 0 ; i < successImageNum ; i++)
     {
 		fisheye::initUndistortRectifyMap(intrinsic_matrix,distortion_coeffs, R, newMatrix, undistorSize,CV_32FC1,mapx,mapy);
         // fisheye::initUndistortRectifyMap(intrinsic_matrix, distortion_coeffs, R,
@@ -217,12 +220,12 @@ int main()
         cv::remap(image_Seq[i],t,mapx, mapy, INTER_CUBIC);
         string imageFileName;
         std::stringstream StrStm;
-        StrStm<<i+1;
+        StrStm<<successImgIdx[i];
         StrStm>>imageFileName;
         imageFileName += "_d.jpg";
         imwrite(imageFileName,t);
 		//imshow(imageFileName, t);
-		cout<<"img"<<i+1<<"save"<<endl;
+		cout<<"img"<<successImgIdx[i]<<"save"<<endl;
     }
     cout<<"saving completed"<<endl;
 
