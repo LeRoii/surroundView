@@ -14,3 +14,6 @@ cmake ..
 make
 ./multiview
 ```
+
+## attention
+to get a good result, the position of the four cameras must be fixed
